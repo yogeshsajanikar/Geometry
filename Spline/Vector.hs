@@ -43,8 +43,18 @@ class Vector k where
   -- | Subtraction of vectors
   (<->) :: k -> k -> k
   (<->) k1 k2 = (<+>) k1 (negateV k2)
+  -- | Post multiplication of vetor with a scalar
   (<*>>) :: k -> ScalarT k -> k
+  -- | Pre multiplication of vector
   (<<*>) :: ScalarT k -> k -> k
+  (<<*>)   s             k   = (<*>>) k s
 
-            
 
+data Vector2D = Vector2D { x :: Double, y :: Double } deriving(Show)
+
+instance Vector Vector2D where
+  type ScalarT Vector2D = Double
+  zeroV = Vector2D 0.0 0.0
+  negateV v = Vector2D (- (x v)) (- (y v))
+  (<+>) v1 v2 = Vector2D ((x v1) + (x v2)) ((y v1) + (y v2))
+  (<*>>) v1 s = Vector2D ((x v1) * s) ((y v1) * s)
