@@ -32,6 +32,7 @@
 module KnotSpace where
 
 import Data.Maybe
+import Data.Set (Set, empty, member, insert, split)
 
 -- In future, we might want to provide an environment, just like Parsec, so 
 -- that the environment (actually a space/metric) which provides basic 
@@ -43,20 +44,27 @@ import Data.Maybe
 class (Eq k, Ord k) => Knot k where 
   type ScalarT k :: *
   type IntT    k :: *
+  -- | Create the knot from its scalar with multiplicity 1
   create :: ScalarT k -> k
+  -- | Access the multiplicity of the knot
   mult   :: k         -> IntT k
+  -- | Access the value of the knot
   value  :: k         -> ScalarT k
   
   
 -- | A knot sequence is a ordered collection of Knot
 class Knots ks where 
   type KnotT ks :: *
-  empty :: Knot (KnotT ks) => KnotT ks -> ks
-  insert :: Knot (KnotT ks) => ks -> KnotT ks -> ks
-  insertS :: Knot (KnotT ks) => ks -> ScalarT (KnotT ks) -> ks
-  find :: Knot (KnotT ks) => ks -> ScalarT (KnotT ks) -> Maybe ks
+  -- | Create empty knot sequence
+  empty   :: Knot (KnotT ks) => KnotT ks -> ks
+  -- | Insert a given knot in the sequence
+  insert  :: Knot (KnotT ks) => ks       -> KnotT ks           -> ks
+  -- | Insert a given knot value (multiplicity 1) in the given knot vector 
+  insertS :: Knot (KnotT ks) => ks       -> ScalarT (KnotT ks) -> ks
+  -- | Find if a scalar value is present in the given knot sequence
+  find    :: Knot (KnotT ks) => ks       -> ScalarT (KnotT ks) -> Maybe ks
   
-
+-- | KnotD represents instance of Knot (Essentially a real knot value)
 data KnotD = KnotD { valueD :: Double, multD :: Integer } deriving Show
 
 instance Eq KnotD where
@@ -71,4 +79,20 @@ instance Knot KnotD where
   create d = KnotD d 1
   mult k = multD k
   value k = valueD k
+
+data KnotV a = KnotV { valueV:: a, multV:: Integer } deriving(Show)
+
+
+instance Eq a => Eq (KnotV a) where
+  (==) k1 k2 = (valueV k1) == (valueV k2)
+  
+instance Ord a => Ord (KnotV a) where
+  compare k1 k2 = compare (valueV k1) (valueV k2)
+
+instance (Eq a, Ord a) => Knot (KnotV a) where 
+  type ScalarT (KnotV a) = a
+  type IntT    (KnotV a) = Integer
+  create d = KnotV d 1
+  mult   k = multV k
+  value  k = valueV k
 
