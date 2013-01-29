@@ -56,13 +56,13 @@ class (Eq k, Ord k) => Knot k where
 class Knots ks where 
   type KnotT ks :: *
   -- | Create empty knot sequence
-  empty   :: Knot (KnotT ks) => KnotT ks -> ks
+  empty   :: ks
   -- | Insert a given knot in the sequence
   insert  :: Knot (KnotT ks) => ks       -> KnotT ks           -> ks
   -- | Insert a given knot value (multiplicity 1) in the given knot vector 
   insertS :: Knot (KnotT ks) => ks       -> ScalarT (KnotT ks) -> ks
   -- | Find if a scalar value is present in the given knot sequence
-  find    :: Knot (KnotT ks) => ks       -> ScalarT (KnotT ks) -> Maybe ks
+  find    :: Knot (KnotT ks) => ks       -> ScalarT (KnotT ks) -> Bool
   
 -- | KnotD represents instance of Knot (Essentially a real knot value)
 data KnotD = KnotD { valueD :: Double, multD :: Integer } deriving Show
@@ -77,11 +77,13 @@ instance Knot KnotD where
   type ScalarT KnotD = Double
   type IntT    KnotD = Integer
   create d = KnotD d 1
-  mult k = multD k
-  value k = valueD k
+  mult   k = multD k
+  value  k = valueD k
 
 data KnotV a = KnotV { valueV:: a, multV:: Integer } deriving(Show)
 
+incrV :: KnotV a -> KnotV a
+incrV k = KnotV (valueV k) (1 + (multV k))
 
 instance Eq a => Eq (KnotV a) where
   (==) k1 k2 = (valueV k1) == (valueV k2)
@@ -96,3 +98,27 @@ instance (Eq a, Ord a) => Knot (KnotV a) where
   mult   k = multV k
   value  k = valueV k
 
+-- Create the knot set 
+
+data KnotsV a = KnotsV { knotSetV :: Set(KnotV a) } deriving(Show)
+
+insertV :: (Ord a) => KnotsV a -> KnotV a -> KnotsV a 
+insertV    ks          k = 
+  let 
+    kset = knotSetV ks
+    kb   = member k kset
+    dk   = if kb then incrV k else k
+  in
+     KnotsV (Data.Set.insert dk kset)
+              
+
+
+instance (Eq a, Ord a) => Knots (KnotsV a) where
+  type KnotT (KnotsV a) = KnotV a
+  empty  = KnotsV Data.Set.empty
+  insert = insertV
+  insertS ks s = KnotSpace.insert ks (KnotV s 1)
+  find ks s = member (KnotV s 1) (knotSetV ks)
+
+                 
+    
